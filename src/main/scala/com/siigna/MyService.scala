@@ -1,6 +1,9 @@
-package com.example
+package com.siigna
+
+import java.io.File
 
 import akka.actor.Actor
+import spray.http.HttpHeaders.{RawHeader, `Access-Control-Allow-Credentials`, `Access-Control-Allow-Origin`}
 import spray.routing._
 import spray.http._
 import MediaTypes._
@@ -19,22 +22,21 @@ class MyServiceActor extends Actor with MyService {
   def receive = runRoute(myRoute)
 }
 
-
 // this trait defines our service behavior independently from the service actor
 trait MyService extends HttpService {
 
+  val library = Library.init()
+
   val myRoute =
-    path("") {
+    path("list" / Rest) { pathRest =>
       get {
-        respondWithMediaType(`text/html`) { // XML is marshalled to `text/xml` by default, so we simply override here
+        respondWithMediaType(`text/plain`) {
           complete {
-            <html>
-              <body>
-                <h1>Say hello to <i>spray-routing</i> on <i>spray-can</i>!</h1>
-              </body>
-            </html>
+            library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
           }
         }
       }
+    } ~ path ("get" / Rest) { pathRest =>
+      getFromFile(library.absolutePath(pathRest))
     }
 }
