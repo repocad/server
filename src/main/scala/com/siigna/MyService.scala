@@ -1,9 +1,8 @@
 package com.siigna
 
-import java.io.File
 
 import akka.actor.Actor
-import spray.http.HttpHeaders.{RawHeader, `Access-Control-Allow-Credentials`, `Access-Control-Allow-Origin`}
+import spray.http.HttpHeaders.{`Access-Control-Allow-Credentials`, `Access-Control-Allow-Origin`}
 import spray.routing._
 import spray.http._
 import MediaTypes._
@@ -37,6 +36,8 @@ trait MyService extends HttpService {
         }
       }
     } ~ path ("get" / Rest) { pathRest =>
-      getFromFile(library.absolutePath(pathRest))
+      respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
+        getFromFile(library.absolutePath(pathRest))
+      }
     }
 }
