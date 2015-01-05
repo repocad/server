@@ -41,7 +41,7 @@ trait MyService extends HttpService {
       }
     } ~ path ("update") {
       library.update() match {
-        case 0 => respondWithStatus(StatusCodes.OK) { complete("") }
+        case 0 => respondWithStatus(StatusCodes.OK) { complete("Updated") }
         case x => respondWithStatus(StatusCodes.InternalServerError) {
           complete {
             "Error when updating library"
