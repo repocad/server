@@ -39,5 +39,15 @@ trait MyService extends HttpService {
       respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
         getFromFile(library.absolutePath(pathRest))
       }
+    } ~ path ("update") {
+      library.update() match {
+        case 0 => respondWithStatus(StatusCodes.OK) { complete("") }
+        case x => respondWithStatus(StatusCodes.InternalServerError) {
+          complete {
+            "Error when updating library"
+          }
+        }
+      }
+
     }
 }

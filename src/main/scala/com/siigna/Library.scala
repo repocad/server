@@ -12,6 +12,8 @@ import scala.util.Right
  */
 sealed case class Library(home : File) {
 
+  def update() = Library.update(home)
+
   def list(path : String) : Either[String, Seq[String]] = {
     val absolutePath = home.getAbsolutePath + File.separator + path
     val file = new File(absolutePath)
@@ -35,22 +37,21 @@ sealed case class Library(home : File) {
  */
 object Library {
 
-  val libraryDir = "siigna_library"
+  private val tmp = System.getProperty("java.io.tmpdir")
+  private val libraryDir = tmp + File.separator + "siigna_library"
 
   def init() : Library = {
-    val tmp = System.getProperty("java.io.tmpdir")
-    val dir = tmp + File.separator + libraryDir
-    val dirFile = new File(dir)
-    if (!dirFile.exists()) {
-      dirFile.mkdir()
+    val libraryFile = new File(libraryDir)
+    if (!libraryFile.exists()) {
+      libraryFile.mkdir()
       clone(new File(tmp))
     } else {
-      update(dirFile)
+      update(libraryFile)
     }
-    Library(dirFile)
+    Library(libraryFile)
   }
 
-  private def clone(parent : File) : Unit = {
+  private def clone(parent : File) : Int = {
     val builder = new ProcessBuilder()
     builder.directory(parent)
     builder.command("git", "clone", "git@github.com:siigna/lib.git", libraryDir)
@@ -58,7 +59,7 @@ object Library {
     p.waitFor()
   }
 
-  private def update(dir : File) : Unit = {
+  private def update(dir : File) : Int = {
     val builder = new ProcessBuilder()
     builder.directory(dir)
     builder.command("git", "pull")
