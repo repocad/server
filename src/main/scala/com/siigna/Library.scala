@@ -3,12 +3,11 @@ package com.siigna
 import java.io.{FileWriter, File}
 
 import scala.collection.{JavaConversions, Seq}
-import scala.io.Source
 import scala.util.Right
 
 /**
  * An interface to Library files
- * @param home
+ * @param home  The home directory as a file
  */
 sealed case class Library(home : File) {
 
@@ -67,14 +66,21 @@ sealed case class Library(home : File) {
     val absolutePath = home.getAbsolutePath + File.separator + path
     val file = new File(absolutePath)
     if (file.isDirectory) {
-      Right(file.listFiles().map(_.getName))
+      Right(file.listFiles()
+        .filter(f => !(f.getName.startsWith(".") || f.getName.endsWith(".md")))
+        .map(file => {
+        if (file.isDirectory) {
+          file.getName + File.separator
+        } else {
+          file.getName
+        }
+      }))
     } else if (file.isFile) {
       Right(Seq(file.getName))
     } else {
       Left(s"Could not found file $file")
     }
   }
-
 
   def put(name : String, data : String) : Either[String, Int] = {
     createFile(new File(home.getAbsolutePath + File.separator + name))
