@@ -1,6 +1,8 @@
 package com.siigna
 
 
+import java.net.URLDecoder
+
 import akka.actor.Actor
 import spray.http.HttpHeaders.{`Access-Control-Allow-Credentials`, `Access-Control-Allow-Origin`}
 import spray.routing._
@@ -37,7 +39,8 @@ trait MyService extends HttpService {
       }
     } ~ path ("get" / Rest) { pathRest =>
       respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
-        getFromFile(library.absolutePath(pathRest))
+        val fileName = URLDecoder.decode(pathRest, "utf8")
+        getFromFile(library.absolutePath(fileName))
       }
     } ~ path ("update") {
       library.update() match {
@@ -48,6 +51,17 @@ trait MyService extends HttpService {
           }
         }
       }
-
+    } ~ path ("post" / Rest) { pathRest =>
+      post {
+        entity(as[String]) { data =>
+          val fileName = URLDecoder.decode(pathRest, "utf8")
+          complete {
+            library.put(fileName, data).right.map {
+              case 0 => s"$fileName stored successfully"
+              case x => s"Unknown error when storing: code $x"
+            }.merge
+          }
+        }
+      }
     }
 }

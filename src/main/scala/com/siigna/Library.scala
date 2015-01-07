@@ -1,8 +1,8 @@
 package com.siigna
 
-import java.io.File
+import java.io.{FileWriter, File}
 
-import scala.collection.Seq
+import scala.collection.{JavaConversions, Seq}
 import scala.io.Source
 import scala.util.Right
 
@@ -12,7 +12,56 @@ import scala.util.Right
  */
 sealed case class Library(home : File) {
 
-  def update() = Library.update(home)
+  private val lock = new Object()
+
+  def absolutePath(path : String) : String = {
+    home.getAbsolutePath + File.separator + path
+  }
+
+  private def createFile(file : File): Either[String, File] = {
+    if (file.exists()) {
+      Right(file)
+    } else {
+      try {
+        file.createNewFile()
+        Right(file)
+      } catch {
+        case e : Throwable => Left(e.getLocalizedMessage)
+      }
+    }
+  }
+
+  private def commit(file : File) : Int = {
+    lock.synchronized {
+      run("git", "add", file.toString)
+      run("git", "commit", "-m", "Web editor commit")
+    }
+
+    push()
+  }
+  private def merge() : Int = {
+    lock.synchronized {
+      run("git", "merge", "branch", "-X", "ours")
+    }
+  }
+
+  private def push() : Int = {
+    update() match {
+      case 0 => 0
+      case _ => merge()
+    }
+    run("git", "push")
+  }
+
+  private def run(args : String*) : Int = {
+    Library.run(home, args)
+  }
+
+  def update() : Int = {
+    lock.synchronized {
+      run("git", "pull")
+    }
+  }
 
   def list(path : String) : Either[String, Seq[String]] = {
     val absolutePath = home.getAbsolutePath + File.separator + path
@@ -26,8 +75,25 @@ sealed case class Library(home : File) {
     }
   }
 
-  def absolutePath(path : String) : String = {
-    home.getAbsolutePath + File.separator + path
+
+  def put(name : String, data : String) : Either[String, Int] = {
+    createFile(new File(home.getAbsolutePath + File.separator + name))
+      .right.flatMap(f => writeToFile(f, data))
+      .right.map(f => commit(f)).right.flatMap {
+      case 0 => Right(0)
+      case x => Left(s"Unknown error while pushing ")
+    }
+  }
+
+  private def writeToFile(file : File, data : String) : Either[String, File] = {
+    try {
+      val w = new FileWriter(file)
+      w.write(data)
+      w.close()
+      Right(file)
+    } catch {
+      case e : Throwable => Left(e.getLocalizedMessage)
+    }
   }
 
 }
@@ -45,26 +111,21 @@ object Library {
     if (!libraryFile.exists()) {
       libraryFile.mkdir()
       clone(new File(tmp))
-    } else {
-      update(libraryFile)
     }
+
     Library(libraryFile)
   }
 
-  private def clone(parent : File) : Int = {
+  private[Library] def run(dir : File, args : Seq[String]) : Int = {
     val builder = new ProcessBuilder()
-    builder.directory(parent)
-    builder.command("git", "clone", "git@github.com:siigna/lib.git", libraryDir)
+    builder.directory(dir)
+    builder.command(JavaConversions.seqAsJavaList(args))
     val p = builder.start()
     p.waitFor()
   }
 
-  private def update(dir : File) : Int = {
-    val builder = new ProcessBuilder()
-    builder.directory(dir)
-    builder.command("git", "pull")
-    val p = builder.start()
-    p.waitFor()
+  private def clone(parent : File) : Int = {
+    run(parent, Seq("git", "clone", "git@github.com:siigna/lib.git", libraryDir))
   }
 
 }

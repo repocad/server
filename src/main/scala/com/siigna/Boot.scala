@@ -15,7 +15,7 @@ object Boot extends App {
   // create and start our service actor
   val service = system.actorOf(Props[MyServiceActor], "demo-service")
 
-  implicit val timeout = Timeout(5.seconds)
+  implicit val timeout = Timeout(30.seconds)
 
   val port = args(0).toInt
 
