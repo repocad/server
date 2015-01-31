@@ -31,9 +31,11 @@ trait MyService extends HttpService {
   val myRoute =
     path("list" / Rest) { pathRest =>
       get {
-        respondWithMediaType(`text/plain`) {
-          complete {
-            library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
+        respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
+          respondWithMediaType(`text/plain`) {
+            complete {
+              library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
+            }
           }
         }
       }
@@ -55,11 +57,13 @@ trait MyService extends HttpService {
       post {
         entity(as[String]) { data =>
           val fileName = URLDecoder.decode(pathRest, "utf8")
-          complete {
-            library.put(fileName, data).right.map {
-              case 0 => s"$fileName stored successfully"
-              case x => s"Unknown error when storing: code $x"
-            }.merge
+          respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
+            complete {
+              library.put(fileName, data).right.map {
+                case 0 => s"$fileName stored successfully"
+                case x => s"Unknown error when storing: code $x"
+              }.merge
+            }
           }
         }
       }
