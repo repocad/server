@@ -28,7 +28,7 @@ trait MyService extends HttpService {
 
   private val allowOriginHeader = `Access-Control-Allow-Origin`(AllOrigins)
   private val optionsCorsHeaders = List(
-    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent"),
+    `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent, Access-Control-Allow-Origin"),
     `Access-Control-Max-Age`(1728000))
 
   def cors[T]: Directive0 = mapRequestContext {
@@ -53,19 +53,15 @@ trait MyService extends HttpService {
     cors {
       path("list" / Rest) { pathRest =>
         get {
-          respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
-            respondWithMediaType(`text/plain`) {
-              complete {
-                library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
-              }
+          respondWithMediaType(`text/plain`) {
+            complete {
+              library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
             }
           }
         }
       } ~ path("get" / Rest) { pathRest =>
-        respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
-          val fileName = URLDecoder.decode(pathRest, "utf8")
-          getFromFile(library.absolutePath(fileName))
-        }
+        val fileName = URLDecoder.decode(pathRest, "utf8")
+        getFromFile(library.absolutePath(fileName))
       } ~ path("update") {
         library.update() match {
           case 0 => respondWithStatus(StatusCodes.OK) {
