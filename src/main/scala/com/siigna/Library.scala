@@ -1,8 +1,9 @@
 package com.siigna
 
-import java.io.{FileWriter, File}
+import java.io.{FileOutputStream, FileWriter, File}
 
 import scala.collection.{JavaConversions, Seq}
+import scala.io.Source
 import scala.util.Right
 
 /**
@@ -82,7 +83,7 @@ sealed case class Library(home : File) {
     }
   }
 
-  def put(name : String, data : String) : Either[String, Int] = {
+  def put(name : String, data : Array[Byte]) : Either[String, Int] = {
     createFile(new File(home.getAbsolutePath + File.separator + name))
       .right.flatMap(f => writeToFile(f, data))
       .right.map(f => commit(f)).right.flatMap {
@@ -91,11 +92,11 @@ sealed case class Library(home : File) {
     }
   }
 
-  private def writeToFile(file : File, data : String) : Either[String, File] = {
+  private def writeToFile(file : File, data : Array[Byte]) : Either[String, File] = {
     try {
-      val w = new FileWriter(file)
-      w.write(data)
-      w.close()
+      val output = new FileOutputStream(file)
+      output.write(data)
+      output.close()
       Right(file)
     } catch {
       case e : Throwable => Left(e.getLocalizedMessage)
@@ -112,11 +113,11 @@ object Library {
   private val tmp = System.getProperty("java.io.tmpdir")
   private val libraryDir = tmp + File.separator + "siigna_library"
 
-  def init() : Library = {
-    val libraryFile = new File(libraryDir)
+  def init(branch : Branch) : Library = {
+    val libraryFile = new File(libraryDir + File.separator + branch.name)
     if (!libraryFile.exists()) {
       libraryFile.mkdir()
-      clone(new File(tmp))
+      clone(new File(libraryDir), branch)
     }
 
     Library(libraryFile)
@@ -130,8 +131,12 @@ object Library {
     p.waitFor()
   }
 
-  private def clone(parent : File) : Int = {
-    run(parent, Seq("git", "clone", "git@github.com:siigna/lib.git", libraryDir))
+  private def clone(parent : File, branch : Branch) : Int = {
+    run(parent, Seq("git", "clone", "-b", branch.name, "git@github.com:siigna/lib.git", libraryDir, branch.name))
   }
 
 }
+
+abstract class Branch(val name : String)
+case object Master extends Branch("master")
+case object Thumbnail extends Branch("thumbnail")

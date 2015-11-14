@@ -1,6 +1,8 @@
 package com.siigna
 
 import java.net.URLDecoder
+import java.nio.charset.Charset
+import java.util.Base64
 
 import akka.actor.Actor
 import spray.http.HttpHeaders._
@@ -47,7 +49,8 @@ trait MyService extends HttpService {
     }
   }
 
-  val library = Library.init()
+  val library = Library.init(Master)
+  val thumbnails = Library.init(Thumbnail)
 
   val myRoute =
     cors {
@@ -79,8 +82,23 @@ trait MyService extends HttpService {
             val fileName = URLDecoder.decode(pathRest, "utf8")
             respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
               complete {
-                library.put(fileName, data).right.map {
+                library.put(fileName, data.getBytes("utf8")).right.map {
                   case 0 => s"$fileName stored successfully"
+                  case x => s"Unknown error when storing: code $x"
+                }.merge
+              }
+            }
+          }
+        }
+      } ~ path("thumbnail" / Rest) { pathRest =>
+        post {
+          entity(as[String]) { stringData =>
+            val thumbnailName = URLDecoder.decode(pathRest, "utf8") + ".png"
+            val pngData = Base64.getDecoder.decode(stringData.getBytes)
+            respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
+              complete {
+                library.put(thumbnailName, pngData).right.map {
+                  case 0 => s"$thumbnailName stored successfully"
                   case x => s"Unknown error when storing: code $x"
                 }.merge
               }
