@@ -49,8 +49,8 @@ trait MyService extends HttpService {
     }
   }
 
-  val library = Library.init(Master)
-  val thumbnails = Library.init(Thumbnail)
+  val drawingsLibrary = Library.init(Master)
+  val thumbnailLibrary = Library.init(Thumbnail)
 
   val myRoute =
     cors {
@@ -58,15 +58,15 @@ trait MyService extends HttpService {
         get {
           respondWithMediaType(`text/plain`) {
             complete {
-              library.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
+              drawingsLibrary.list(pathRest).fold(left => left.toString, right => right.mkString("\n"))
             }
           }
         }
       } ~ path("get" / Rest) { pathRest =>
         val fileName = URLDecoder.decode(pathRest, "utf8")
-        getFromFile(library.absolutePath(fileName))
+        getFromFile(drawingsLibrary.absolutePath(fileName))
       } ~ path("update") {
-        library.update() match {
+        drawingsLibrary.update() match {
           case 0 => respondWithStatus(StatusCodes.OK) {
             complete("Updated")
           }
@@ -82,7 +82,7 @@ trait MyService extends HttpService {
             val fileName = URLDecoder.decode(pathRest, "utf8")
             respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
               complete {
-                library.put(fileName, data.getBytes("utf8")).right.map {
+                drawingsLibrary.put(fileName, data.getBytes("utf8")).right.map {
                   case 0 => s"$fileName stored successfully"
                   case x => s"Unknown error when storing: code $x"
                 }.merge
@@ -97,7 +97,7 @@ trait MyService extends HttpService {
             val pngData = Base64.getDecoder.decode(stringData.getBytes)
             respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
               complete {
-                library.put(thumbnailName, pngData).right.map {
+                thumbnailLibrary.put(thumbnailName, pngData).right.map {
                   case 0 => s"$thumbnailName stored successfully"
                   case x => s"Unknown error when storing: code $x"
                 }.merge

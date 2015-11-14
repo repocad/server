@@ -111,7 +111,7 @@ sealed case class Library(home : File) {
 object Library {
 
   private val tmp = System.getProperty("java.io.tmpdir")
-  private val libraryDir = tmp + File.separator + "siigna_library"
+  private val libraryDir = tmp + File.separator + "repocad_lib"
 
   def init(branch : Branch) : Library = {
     val libraryFile = new File(libraryDir + File.separator + branch.name)
