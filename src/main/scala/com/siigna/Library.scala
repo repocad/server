@@ -129,6 +129,7 @@ object Library {
     val builder = new ProcessBuilder()
     builder.directory(dir)
     builder.command(JavaConversions.seqAsJavaList(args))
+    builder.inheritIO()
     val p = builder.start()
     p.waitFor()
   }
