@@ -80,13 +80,11 @@ trait MyService extends HttpService {
         post {
           entity(as[String]) { data =>
             val fileName = URLDecoder.decode(pathRest, "utf8")
-            respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
-              complete {
-                drawingsLibrary.put(fileName, data.getBytes("utf8")).right.map {
-                  case 0 => s"$fileName stored successfully"
-                  case x => s"Unknown error when storing: code $x"
-                }.merge
-              }
+            complete {
+              drawingsLibrary.put(fileName, data.getBytes("utf8")).right.map {
+                case 0 => s"$fileName stored successfully"
+                case x => s"Unknown error when storing: code $x"
+              }.merge
             }
           }
         }
@@ -94,14 +92,13 @@ trait MyService extends HttpService {
         post {
           entity(as[String]) { stringData =>
             val thumbnailName = URLDecoder.decode(pathRest, "utf8") + ".png"
-            val pngData = Base64.getDecoder.decode(stringData.getBytes)
-            respondWithHeaders(`Access-Control-Allow-Origin`(AllOrigins), `Access-Control-Allow-Credentials`(true)) {
-              complete {
-                thumbnailLibrary.put(thumbnailName, pngData).right.map {
-                  case 0 => s"$thumbnailName stored successfully"
-                  case x => s"Unknown error when storing: code $x"
-                }.merge
-              }
+            val base64String = stringData.substring(stringData.indexOf(",") + 1)
+            val pngData = Base64.getDecoder.decode(base64String)
+            complete {
+              thumbnailLibrary.put(thumbnailName, pngData).right.map {
+                case 0 => s"$thumbnailName stored successfully"
+                case x => s"Unknown error when storing: code $x"
+              }.merge
             }
           }
         }

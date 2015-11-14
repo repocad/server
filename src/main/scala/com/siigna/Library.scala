@@ -1,9 +1,8 @@
 package com.siigna
 
-import java.io.{FileOutputStream, FileWriter, File}
+import java.io.{FileOutputStream, File}
 
 import scala.collection.{JavaConversions, Seq}
-import scala.io.Source
 import scala.util.Right
 
 /**
@@ -111,13 +110,16 @@ sealed case class Library(home : File) {
 object Library {
 
   private val tmp = System.getProperty("java.io.tmpdir")
-  private val libraryDir = tmp + File.separator + "repocad_lib"
+  private val libraryDir = new File(tmp + File.separator + "repocad_lib")
 
   def init(branch : Branch) : Library = {
     val libraryFile = new File(libraryDir + File.separator + branch.name)
+    if (!libraryDir.exists()) {
+      libraryDir.mkdir()
+    }
+
     if (!libraryFile.exists()) {
-      libraryFile.mkdir()
-      clone(new File(libraryDir), branch)
+      clone(branch)
     }
 
     Library(libraryFile)
@@ -131,8 +133,8 @@ object Library {
     p.waitFor()
   }
 
-  private def clone(parent : File, branch : Branch) : Int = {
-    run(parent, Seq("git", "clone", "-b", branch.name, "git@github.com:repocad/lib.git", libraryDir, branch.name))
+  private def clone(branch : Branch) : Int = {
+    run(libraryDir, Seq("git", "clone", "-b", branch.name, "git@github.com:repocad/lib.git", branch.name))
   }
 
 }
