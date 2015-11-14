@@ -132,7 +132,7 @@ object Library {
   }
 
   private def clone(parent : File, branch : Branch) : Int = {
-    run(parent, Seq("git", "clone", "-b", branch.name, "git@github.com:siigna/lib.git", libraryDir, branch.name))
+    run(parent, Seq("git", "clone", "-b", branch.name, "git@github.com:repocad/lib.git", libraryDir, branch.name))
   }
 
 }
