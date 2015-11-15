@@ -122,7 +122,9 @@ object Library {
       clone(branch)
     }
 
-    Library(libraryFile)
+    val library = new Library(libraryFile)
+    library.update()
+    library
   }
 
   private[Library] def run(dir : File, args : Seq[String]) : Int = {

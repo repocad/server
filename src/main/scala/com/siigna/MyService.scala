@@ -1,7 +1,6 @@
 package com.siigna
 
 import java.net.URLDecoder
-import java.nio.charset.Charset
 import java.util.Base64
 
 import akka.actor.Actor
@@ -33,6 +32,11 @@ trait MyService extends HttpService {
     `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent, Access-Control-Allow-Origin"),
     `Access-Control-Max-Age`(1728000))
 
+  val acceptType : Directive1[Seq[MediaRange]]= headerValuePF {
+    case `Accept`(cts) => cts
+    case _ => Seq()
+  }
+
   def cors[T]: Directive0 = mapRequestContext {
     ctx => ctx.withRouteResponseHandling({
       //It is an option requeset for a resource that responds to some other method
@@ -63,8 +67,15 @@ trait MyService extends HttpService {
           }
         }
       } ~ path("get" / Rest) { pathRest =>
-        val fileName = URLDecoder.decode(pathRest, "utf8")
-        getFromFile(drawingsLibrary.absolutePath(fileName))
+        acceptType { (responseTypes : Seq[MediaRange]) =>
+          val baseFileName = URLDecoder.decode(pathRest, "utf8")
+          val file = if (responseTypes.exists(_.matches(MediaTypes.`image/png`))) {
+            thumbnailLibrary.absolutePath(baseFileName + ".png")
+          } else {
+            drawingsLibrary.absolutePath(baseFileName)
+          }
+          getFromFile(file)
+        }
       } ~ path("update") {
         drawingsLibrary.update() match {
           case 0 => respondWithStatus(StatusCodes.OK) {
