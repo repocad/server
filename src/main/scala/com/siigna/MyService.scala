@@ -55,10 +55,22 @@ trait MyService extends HttpService {
 
   val drawingsLibrary = Library.init(Master)
   val thumbnailLibrary = Library.init(Thumbnail)
+  val errorLog = ErrorLog.getLogger
 
   val myRoute =
     cors {
-      path("list" / Rest) { pathRest =>
+      path("error" / Rest) { pathRest =>
+        post {
+          entity(as[String]) { data =>
+            if (errorLog.isDefined) {
+              errorLog.get.logError(pathRest, data)
+            } else {
+              println(pathRest -> data)
+            }
+            complete(StatusCodes.OK)
+          }
+        }
+      } ~ path("list" / Rest) { pathRest =>
         get {
           respondWithMediaType(`text/plain`) {
             complete {
