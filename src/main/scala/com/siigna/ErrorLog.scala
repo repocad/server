@@ -24,6 +24,22 @@ object ErrorLog {
 
 sealed class ErrorLog(home: File) {
 
+
+  def getError(system: String): Option[String] = {
+    val errorFile = new File(ErrorLog.errorDirectory + File.separator + system)
+    if (errorFile.isFile) {
+      try {
+        Some(Source.fromFile(errorFile).getLines().mkString("\n"))
+      } catch {
+        case e: Exception =>
+          println(e)
+          None
+      }
+    } else {
+      None
+    }
+  }
+
   def logError(system: String, data: String): Unit = {
     val errorFile = new File(ErrorLog.errorDirectory + File.separator + system)
     if (!errorFile.isFile) {
@@ -33,6 +49,7 @@ sealed class ErrorLog(home: File) {
     val fileWriter = new FileWriter(errorFile, true)
     try {
       fileWriter.write(data)
+      fileWriter.write("\n")
     } finally {
       fileWriter.close()
     }

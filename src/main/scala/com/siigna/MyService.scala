@@ -32,7 +32,7 @@ trait MyService extends HttpService {
     `Access-Control-Allow-Headers`("Origin, X-Requested-With, Content-Type, Accept, Accept-Encoding, Accept-Language, Host, Referer, User-Agent, Access-Control-Allow-Origin"),
     `Access-Control-Max-Age`(1728000))
 
-  val acceptType : Directive1[Seq[MediaRange]]= headerValuePF {
+  val acceptType: Directive1[Seq[MediaRange]] = headerValuePF {
     case `Accept`(cts) => cts
     case _ => Seq()
   }
@@ -40,14 +40,13 @@ trait MyService extends HttpService {
   def cors[T]: Directive0 = mapRequestContext {
     ctx => ctx.withRouteResponseHandling({
       //It is an option requeset for a resource that responds to some other method
-      case Rejected(x) if ctx.request.method.equals(HttpMethods.OPTIONS) && x.exists(_.isInstanceOf[MethodRejection]) => {
+      case Rejected(x) if ctx.request.method.equals(HttpMethods.OPTIONS) && x.exists(_.isInstanceOf[MethodRejection]) =>
         val allowedMethods: List[HttpMethod] = x.collect {
           case rejection: MethodRejection => rejection.supported
         }
         ctx.complete(HttpResponse().withHeaders(
-          `Access-Control-Allow-Methods`(OPTIONS, allowedMethods :_*) ::  allowOriginHeader :: optionsCorsHeaders
+          `Access-Control-Allow-Methods`(OPTIONS, allowedMethods: _*) :: allowOriginHeader :: optionsCorsHeaders
         ))
-      }
     }).withHttpResponseHeadersMapped { headers =>
       allowOriginHeader :: headers
     }
@@ -60,7 +59,14 @@ trait MyService extends HttpService {
   val myRoute =
     cors {
       path("error" / Rest) { pathRest =>
-        post {
+        get {
+          errorLog.flatMap(_.getError(pathRest)) match {
+            case None => complete(StatusCodes.NoContent)
+            case Some(content) => complete {
+              content
+            }
+          }
+        } ~ post {
           entity(as[String]) { data =>
             if (errorLog.isDefined) {
               errorLog.get.logError(pathRest, data)
@@ -79,7 +85,7 @@ trait MyService extends HttpService {
           }
         }
       } ~ path("get" / Rest) { pathRest =>
-        acceptType { (responseTypes : Seq[MediaRange]) =>
+        acceptType { (responseTypes: Seq[MediaRange]) =>
           val baseFileName = URLDecoder.decode(pathRest, "utf8")
           val file = if (responseTypes.exists(_.matches(MediaTypes.`image/png`))) {
             thumbnailLibrary.absolutePath(baseFileName + ".png")
