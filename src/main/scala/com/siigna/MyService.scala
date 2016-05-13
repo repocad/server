@@ -54,13 +54,32 @@ trait MyService extends HttpService {
 
   val drawingsLibrary = Library.init(Master)
   val thumbnailLibrary = Library.init(Thumbnail)
-  val errorLog = ErrorLog.getLogger
+  val errorLog = Log.getLogger("error")
+  val fontcutLog = Log.getLogger("fontcut")
 
   val myRoute =
     cors {
-      path("error" / Rest) { pathRest =>
+      path("fontcut" / Rest) { pathRest =>
         get {
-          errorLog.flatMap(_.getError(pathRest)) match {
+          fontcutLog.flatMap(_.getLog(pathRest)) match {
+            case None => complete(StatusCodes.NoContent)
+            case Some(content) => complete {
+              content
+            }
+          }
+        } ~ post {
+          entity(as[String]) { data =>
+            if (fontcutLog.isDefined) {
+              fontcutLog.get.log(pathRest, data)
+            } else {
+              println(pathRest -> data)
+            }
+            complete(StatusCodes.OK)
+          }
+        }
+      } ~ path("error" / Rest) { pathRest =>
+        get {
+          errorLog.flatMap(_.getLog(pathRest)) match {
             case None => complete(StatusCodes.NoContent)
             case Some(content) => complete {
               content
@@ -69,7 +88,7 @@ trait MyService extends HttpService {
         } ~ post {
           entity(as[String]) { data =>
             if (errorLog.isDefined) {
-              errorLog.get.logError(pathRest, data)
+              errorLog.get.log(pathRest, data)
             } else {
               println(pathRest -> data)
             }
