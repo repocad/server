@@ -2,6 +2,7 @@ package com.siigna
 
 import java.io.{File, FileWriter}
 import java.nio.file._
+import java.util.Date
 
 import scala.io.Source
 
@@ -60,6 +61,8 @@ sealed class Log(home: Path) {
     getSystem(system).map(_.toFile).foreach(file => {
       val fileWriter = new FileWriter(file, true)
       try {
+        fileWriter.write(new Date().toString)
+        fileWriter.write(" - ")
         fileWriter.write(data)
         fileWriter.write("\n")
       } finally {
